@@ -22,14 +22,26 @@ const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology:
 async function run(){
     try{
         const productCategory =client.db("ph-hero-mart").collection("productCategory")
-        const productCollection =client.db("ph-hero-mart").collection("resaleProduct")
+        const productsCollection =client.db("ph-hero-mart").collection("resaleProduct")
         const UssersCollection =client.db("ph-hero-mart").collection("allUser")
        
+        // Product Category Loaded
        app.get("/product-categories",async(req,res)=>{
             const query = {}
             const result= await productCategory.find().toArray()
             res.send(result)
        })
+
+     // api for add products
+     app.post("/add-product", async(req,res)=>{
+        const product = req.body
+       const result = await productsCollection.insertOne(product)
+       res.send(result)
+     })
+
+
+
+
     }
     finally{
 
