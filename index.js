@@ -19,43 +19,54 @@ const uri = `mongodb+srv://${process.env.DB_ADMIN_USER}:${process.env.DV_ADMIN_P
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
-async function run(){
-    try{
-        const productCategory =client.db("ph-hero-mart").collection("productCategory")
-        const productsCollection =client.db("ph-hero-mart").collection("resaleProduct")
-        const UssersCollection =client.db("ph-hero-mart").collection("allUser")
-       
-        // Product Category Loaded
-       app.get("/product-categories",async(req,res)=>{
-            const query = {}
-            const result= await productCategory.find().toArray()
-            res.send(result)
-       })
+async function run() {
+    try {
+        const productCategory = client.db("ph-hero-mart").collection("productCategory")
+        const productsCollection = client.db("ph-hero-mart").collection("resaleProduct")
+        const UssersCollection = client.db("ph-hero-mart").collection("allUser")
 
-     // api for add products
-     app.post("/add-product", async(req,res)=>{
-        const product = req.body
-       const result = await productsCollection.insertOne(product)
-       res.send(result)
-     })
+        // Product Category Loaded
+        app.get("/product-categories", async (req, res) => {
+            const query = {}
+            const result = await productCategory.find().toArray()
+            res.send(result)
+        })
+
+
+        // api for getProduct
+        app.get("/products/:id",async(req,res)=>{
+            const categoryId = req.params.id;
+            const query ={prductCategoryId: categoryId}
+            const result = await productsCollection.find(query).toArray()
+            res.send(result)
+            
+        })
+
+
+        // api for add products
+        app.post("/add-product", async (req, res) => {
+            const product = req.body
+            const result = await productsCollection.insertOne(product)
+            res.send(result)
+        })
 
 
 
 
     }
-    finally{
+    finally {
 
     }
 }
 
-run().catch(err=>console.log(err))
+run().catch(err => console.log(err))
 
 
-app.get("/",(req,res)=>{
+app.get("/", (req, res) => {
     res.send("Server is running successful")
 })
 
 
-app.listen(port,()=>{
+app.listen(port, () => {
     console.log(`server is running on : ${port}`)
 })
