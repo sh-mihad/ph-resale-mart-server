@@ -3,6 +3,7 @@ const cors = require('cors');
 const app = express()
 const port = process.env.PORT || 5000
 require('dotenv').config();
+const jwt = require('jsonwebtoken');
 
 
 const userNmae = process.env.DB_ADMIN_USER;
@@ -14,16 +15,20 @@ app.use(express.json())
 
 
 
-const { MongoClient, ServerApiVersion } = require('mongodb');
+const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const uri = `mongodb+srv://${process.env.DB_ADMIN_USER}:${process.env.DV_ADMIN_PSS}@cluster0.pkgzac3.mongodb.net/?retryWrites=true&w=majority`;
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+
+
+
 async function run() {
     try {
+        const usersCollection = client.db("ph-hero-mart").collection("allUser")
         const productCategory = client.db("ph-hero-mart").collection("productCategory")
         const productsCollection = client.db("ph-hero-mart").collection("resaleProduct")
-        const UssersCollection = client.db("ph-hero-mart").collection("allUser")
+        const bookingsCollection = client.db("ph-hero-mart").collection("bookings")
 
         // Product Category Loaded
         app.get("/product-categories", async (req, res) => {
@@ -34,13 +39,45 @@ async function run() {
 
 
         // api for getProduct
-        app.get("/products/:id",async(req,res)=>{
+        app.get("/products/:id", async (req, res) => {
             const categoryId = req.params.id;
-            const query ={prductCategoryId: categoryId}
+            const query = { prductCategoryId: categoryId }
             const result = await productsCollection.find(query).toArray()
             res.send(result)
-            
+
         })
+    
+          // API for get My products using emil query
+          app.get("/get-products", async(req,res)=>{
+            const email = req.query.email;
+            const query = {sellerEmail : email}
+            const result = await productsCollection.find(query).toArray()
+            res.send(result)
+          })
+
+        // API for update 
+          app.put("/product-status/:id", async(req,res)=>{
+            const id = req.params.id;
+            const filter = {_id:ObjectId(id)}
+            const options = { upsert: true };
+            const updateDoc = {
+                $set :{
+                    productStatus : "sold"
+                }
+            }
+
+            const result = await productsCollection.updateOne(filter,updateDoc,options)
+            res.send(result)
+
+          })
+
+          // API for Delete Product
+          app.delete("/delete-products/:id", async(req,res)=>{
+            const id = req.params.id;
+            const query = {_id:ObjectId(id)}
+            const result = await productsCollection.deleteOne(query)
+            res.send(result)
+          })
 
 
         // api for add products
@@ -50,7 +87,43 @@ async function run() {
             res.send(result)
         })
 
+          // API for Get Bookings
+          app.get("/bookings", async(req,res)=>{
+            const email = req.query.email 
+            console.log(email);
+            const query ={email:email}
+            const result = await bookingsCollection.find(query).toArray()
+            res.send(result)
+          })
 
+
+        // POST API for Bookings
+        app.post("/bookings", async (req, res) => {
+            const booking = req.body;
+            const result = await bookingsCollection.insertOne(booking)
+            res.send(result)
+        })
+
+        // User API 
+        app.put("/users/:email", async (req, res) => {
+            const email = req.params.email;
+            const user = req.body;
+            const filter = { email: email }
+            const options = { upsert: true };
+            const updateDoc = {
+                $set: user
+            }
+            const result = await usersCollection.updateOne(filter, updateDoc, options)
+            const token = jwt.sign(user, process.env.JWT_TOKEN, { expiresIn: "1d" })
+
+            res.send({result,"token":token})
+        })
+      
+
+      
+        
+
+      
 
 
     }
