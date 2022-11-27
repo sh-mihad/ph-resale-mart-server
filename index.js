@@ -104,6 +104,16 @@ async function run() {
             res.send(result)
         })
 
+        // get user api
+        app.get("/users", async(req,res)=>{
+            const email = req.query.email
+            const query={email : email}
+            const result = await usersCollection.findOne(query)
+            res.send(result)
+
+        })
+
+
         // User API 
         app.put("/users/:email", async (req, res) => {
             const email = req.params.email;
@@ -118,8 +128,44 @@ async function run() {
 
             res.send({result,"token":token})
         })
-      
 
+        // api for make admin role
+        app.put("/user-admin/:id", async(req,res)=>{
+            const id = req.params.id 
+            const filter = {_id:ObjectId(id)}
+            const options = { upsert: true };
+            const updateDoc = {
+                $set:{
+                    userCategory:"Admin"
+                }
+
+            }
+            const result= await usersCollection.updateOne(filter,updateDoc,options)
+            res.send(result)
+        })
+
+
+        // api for user delete
+        app.delete("/users/:id", async(req,res)=>{
+            const id = req.params.id 
+            const query = {_id:ObjectId(id)}
+            const result = await usersCollection.deleteOne(query)
+            res.send(result) 
+        })
+      
+        // API for get all Seller 
+        app.get("/all-buyers", async(req,res)=>{
+            const query = {userCategory: "Buyer"}
+            const result = await usersCollection.find(query).toArray()
+            res.send(result)
+        })
+
+        // API for get All seller
+        app.get("/all-sellers", async(req,res)=>{
+            const query ={userCategory:"Seller"}
+            const result = await usersCollection.find(query).toArray()
+            res.send(result)
+        })
       
         
 
