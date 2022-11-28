@@ -20,7 +20,23 @@ const uri = `mongodb+srv://${process.env.DB_ADMIN_USER}:${process.env.DV_ADMIN_P
 const client = new MongoClient(uri, { useNewUrlParser: true, useUnifiedTopology: true, serverApi: ServerApiVersion.v1 });
 
 
+async function jwtVerify(req,res,next){
+    const getToken = req.headers.auhurizaton
+    if(!getToken){
+      return  res.status(401).send({message:"Unauthorized Access"})
+    }
+    const token = getToken?.split(" ")[1]
+    jwt.verify(token,process.env.JWT_TOKEN,function(err,decoded){
+        if(err){
+            return  res.status(401).send({message:"Unauthorized Access from 2nd stape"})
+        }
 
+        req.decoded = decoded
+        // console.log(decoded)
+        next()
+    })
+   
+}
 
 
 async function run() {
@@ -90,7 +106,7 @@ async function run() {
           // API for Get Bookings
           app.get("/bookings", async(req,res)=>{
             const email = req.query.email 
-            console.log(email);
+            // console.log(email);
             const query ={email:email}
             const result = await bookingsCollection.find(query).toArray()
             res.send(result)
@@ -105,10 +121,16 @@ async function run() {
         })
 
         // get user api
-        app.get("/users", async(req,res)=>{
-            const email = req.query.email
-            const query={email : email}
+        app.get("/users",jwtVerify,async(req,res)=>{
+            const email = req.query.email           
+            const decodedEmail= req.decoded.email;
+            console.log(email,decodedEmail);
+            if(decodedEmail !== email){
+                return res.status(403).send({message:"forbiden access"})
+            }
+            const query={email:decodedEmail}
             const result = await usersCollection.findOne(query)
+            console.log(result)
             res.send(result)
 
         })
@@ -130,7 +152,13 @@ async function run() {
         })
 
         // api for make admin role
-        app.put("/user-admin/:id", async(req,res)=>{
+        app.put("/user-admin/:id",jwtVerify, async(req,res)=>{
+           const decodedEmail = req.decoded.email
+           const query ={email:decodedEmail}
+           const admin = await usersCollection.findOne(query)
+           if(admin.userCategory !== "Admin"){
+            return res.status(401).send({message:"Unauthorized Access"})
+           }
             const id = req.params.id 
             const filter = {_id:ObjectId(id)}
             const options = { upsert: true };
@@ -153,7 +181,7 @@ async function run() {
             res.send(result) 
         })
       
-        // API for get all Seller 
+        // API for get all Byer
         app.get("/all-buyers", async(req,res)=>{
             const query = {userCategory: "Buyer"}
             const result = await usersCollection.find(query).toArray()
@@ -166,12 +194,12 @@ async function run() {
             const result = await usersCollection.find(query).toArray()
             res.send(result)
         })
-      
-        
-
-      
-
-
+        // Api for get all Admin
+        app.get("/all-admin", async(req,res)=>{
+            const query ={userCategory:"Admin"}
+            const result = await usersCollection.find(query).toArray()
+            res.send(result)
+        })
     }
     finally {
 
