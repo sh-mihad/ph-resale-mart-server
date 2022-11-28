@@ -124,13 +124,11 @@ async function run() {
         app.get("/users",jwtVerify,async(req,res)=>{
             const email = req.query.email           
             const decodedEmail= req.decoded.email;
-            console.log(email,decodedEmail);
             if(decodedEmail !== email){
                 return res.status(403).send({message:"forbiden access"})
             }
             const query={email:decodedEmail}
             const result = await usersCollection.findOne(query)
-            console.log(result)
             res.send(result)
 
         })
@@ -171,6 +169,8 @@ async function run() {
             const result= await usersCollection.updateOne(filter,updateDoc,options)
             res.send(result)
         })
+
+    
 
 
         // api for user delete
